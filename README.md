@@ -1,4 +1,4 @@
-## 📚 Student Record System (C++)
+# 📚 Student Record System (C++)
 
 A simple **console-based student management system** built in C++.  
 This project demonstrates file handling, object-oriented programming, and data operations like **add**, **view**, **search**, **update**, **delete**, **sort**, and **export**.
@@ -20,16 +20,17 @@ This project demonstrates file handling, object-oriented programming, and data o
 
 ---
 
-### 🛠️ Technologies Used
-- **C++**
-- **File Handling** (binary and text)
-- **OOP (Class)**
-- **Vector & Algorithm (for sorting)**
+### 📢 Contributing
+
+Contributions are welcome! If you'd like to contribute to this project, please fork the repository, create a new branch, and submit a pull request.  
+Ensure that your code follows the project's style guide and includes tests for any new functionality.
 
 ---
 
-### 🚀 How to Run
+### 📜 License
 
-1. **Compile the program** (make sure `g++` is installed):
-   ```bash
-   g++ main.cpp -o student-record
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+---
+
+### **Made with ❤️ by [VINAY07010](https://github.com/VINAY07010)**
