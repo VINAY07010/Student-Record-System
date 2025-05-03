@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <iomanip>
 using namespace std;
 
 class Student {
@@ -55,18 +56,20 @@ public:
     }
 
     void display() const {
-        cout << "Student ID: " << studentID
-             << ", Roll No: " << rollNo
-             << ", Name: " << name
-             << ", Gender: " << gender
-             << ", Course: " << course
-             << ", Year: " << year
-             << ", CGPA: " << cgpa << endl;
+        cout << left << setw(12) << studentID
+             << setw(10) << rollNo
+             << setw(20) << name
+             << setw(8) << gender
+             << setw(15) << course
+             << setw(6) << year
+             << fixed << setprecision(2) << cgpa << endl;
     }
 
     string toCSV() const {
-        return studentID + "," + to_string(rollNo) + "," + name + "," + gender + "," +
-               course + "," + to_string(year) + "," + to_string(cgpa);
+        stringstream ss;
+        ss << studentID << "," << rollNo << "," << name << "," << gender << ","
+           << course << "," << year << "," << fixed << setprecision(2) << cgpa;
+        return ss.str();
     }
 
     static Student fromCSV(const string &line) {
@@ -264,6 +267,23 @@ void sortStudents() {
         s.display();
 }
 
+void exportToCSV() {
+    ifstream in("students.dat");
+    ofstream out("students.csv");
+    string line;
+
+    out << "StudentID,RollNo,Name,Gender,Course,Year,CGPA" << endl;
+
+    while (getline(in, line)) {
+        Student s = Student::fromCSV(line);
+        out << s.toCSV() << endl;
+    }
+
+    in.close();
+    out.close();
+    cout << "Records exported to students.csv\n";
+}
+
 int main() {
     int choice;
     do {
@@ -275,7 +295,8 @@ int main() {
         cout << "5. Delete Student Record\n";
         cout << "6. Export to TXT\n";
         cout << "7. Sort Records\n";
-        cout << "8. Exit\n";
+        cout << "8. Export to CSV\n";
+        cout << "9. Exit\n";
         cout << "Enter your choice: ";
         cin >> choice;
 
@@ -287,10 +308,11 @@ int main() {
             case 5: deleteStudent(); break;
             case 6: exportToText(); break;
             case 7: sortStudents(); break;
-            case 8: cout << "Exiting...\n"; break;
+            case 8: exportToCSV(); break;
+            case 9: cout << "Exiting...\n"; break;
             default: cout << "Invalid choice.\n";
         }
-    } while (choice != 8);
+    } while (choice != 9);
 
     return 0;
 }
