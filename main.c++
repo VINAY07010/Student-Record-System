@@ -2,16 +2,23 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <sstream>
 #include <algorithm>
 using namespace std;
 
 class Student {
 public:
+    string studentID;
     int rollNo;
     string name;
-    float marks;
+    string gender;
+    string course;
+    int year;
+    float cgpa;
 
     void input() {
+        cout << "Enter Student ID: ";
+        cin >> studentID;
         cout << "Enter Roll No: ";
         cin >> rollNo;
         cin.ignore();
@@ -21,49 +28,103 @@ public:
             cout << "Name cannot be empty. Re-enter: ";
             getline(cin, name);
         }
-        cout << "Enter Marks: ";
-        cin >> marks;
-        while (marks < 0 || marks > 100) {
-            cout << "Marks must be between 0 and 100. Re-enter: ";
-            cin >> marks;
+        cout << "Enter Gender (M/F/O): ";
+        getline(cin, gender);
+        while (gender.empty()) {
+            cout << "Gender cannot be empty. Re-enter: ";
+            getline(cin, gender);
+        }
+        cout << "Enter Course: ";
+        getline(cin, course);
+        while (course.empty()) {
+            cout << "Course cannot be empty. Re-enter: ";
+            getline(cin, course);
+        }
+        cout << "Enter Year (1-4): ";
+        cin >> year;
+        while (year < 1 || year > 4) {
+            cout << "Year must be between 1 and 4. Re-enter: ";
+            cin >> year;
+        }
+        cout << "Enter CGPA (0.0 - 10.0): ";
+        cin >> cgpa;
+        while (cgpa < 0.0 || cgpa > 10.0) {
+            cout << "CGPA must be between 0.0 and 10.0. Re-enter: ";
+            cin >> cgpa;
         }
     }
 
     void display() const {
-        cout << "Roll No: " << rollNo << ", Name: " << name << ", Marks: " << marks << endl;
+        cout << "Student ID: " << studentID
+             << ", Roll No: " << rollNo
+             << ", Name: " << name
+             << ", Gender: " << gender
+             << ", Course: " << course
+             << ", Year: " << year
+             << ", CGPA: " << cgpa << endl;
+    }
+
+    string toCSV() const {
+        return studentID + "," + to_string(rollNo) + "," + name + "," + gender + "," +
+               course + "," + to_string(year) + "," + to_string(cgpa);
+    }
+
+    static Student fromCSV(const string &line) {
+        Student s;
+        stringstream ss(line);
+        string rollStr, yearStr, cgpaStr;
+
+        getline(ss, s.studentID, ',');
+        getline(ss, rollStr, ',');
+        getline(ss, s.name, ',');
+        getline(ss, s.gender, ',');
+        getline(ss, s.course, ',');
+        getline(ss, yearStr, ',');
+        getline(ss, cgpaStr, ',');
+
+        s.rollNo = stoi(rollStr);
+        s.year = stoi(yearStr);
+        s.cgpa = stof(cgpaStr);
+
+        return s;
     }
 };
 
 void addStudent() {
     Student s;
     s.input();
-    ofstream out("students.dat", ios::binary | ios::app);
-    out.write((char*)&s, sizeof(s));
+    ofstream out("students.dat", ios::app);
+    out << s.toCSV() << endl;
     out.close();
     cout << "Record added successfully.\n";
 }
 
 void displayAll() {
-    Student s;
-    ifstream in("students.dat", ios::binary);
+    ifstream in("students.dat");
     if (!in) {
         cout << "No records found.\n";
         return;
     }
-    while (in.read((char*)&s, sizeof(s))) {
+
+    string line;
+    while (getline(in, line)) {
+        Student s = Student::fromCSV(line);
         s.display();
     }
+
     in.close();
 }
 
 void searchStudent() {
     int roll;
     bool found = false;
-    Student s;
     cout << "Enter Roll No to search: ";
     cin >> roll;
-    ifstream in("students.dat", ios::binary);
-    while (in.read((char*)&s, sizeof(s))) {
+
+    ifstream in("students.dat");
+    string line;
+    while (getline(in, line)) {
+        Student s = Student::fromCSV(line);
         if (s.rollNo == roll) {
             cout << "Record Found:\n";
             s.display();
@@ -71,6 +132,7 @@ void searchStudent() {
             break;
         }
     }
+
     in.close();
     if (!found)
         cout << "Student with Roll No " << roll << " not found.\n";
@@ -79,28 +141,39 @@ void searchStudent() {
 void updateStudent() {
     int roll;
     bool found = false;
-    Student s;
-    fstream file("students.dat", ios::binary | ios::in | ios::out);
     cout << "Enter Roll No to update: ";
     cin >> roll;
 
-    while (file.read((char*)&s, sizeof(s))) {
+    vector<Student> students;
+    string line;
+    ifstream in("students.dat");
+    while (getline(in, line)) {
+        Student s = Student::fromCSV(line);
+        students.push_back(s);
+    }
+    in.close();
+
+    for (auto &s : students) {
         if (s.rollNo == roll) {
             cout << "Old Record:\n";
             s.display();
             cout << "Enter New Details:\n";
             s.input();
-            int pos = -1 * (int)sizeof(s);
-            file.seekp(pos, ios::cur);
-            file.write((char*)&s, sizeof(s));
-            cout << "Record updated successfully.\n";
+            s.rollNo = roll; // preserve the original roll no
             found = true;
             break;
         }
     }
-    file.close();
-    if (!found)
+
+    if (found) {
+        ofstream out("students.dat");
+        for (const auto &s : students)
+            out << s.toCSV() << endl;
+        out.close();
+        cout << "Record updated successfully.\n";
+    } else {
         cout << "Student not found.\n";
+    }
 }
 
 void deleteStudent() {
@@ -109,21 +182,22 @@ void deleteStudent() {
     cout << "Enter Roll No to delete: ";
     cin >> roll;
 
-    Student s;
-    ifstream in("students.dat", ios::binary);
-    ofstream out("temp.dat", ios::binary);
-
-    while (in.read((char*)&s, sizeof(s))) {
+    vector<Student> students;
+    string line;
+    ifstream in("students.dat");
+    while (getline(in, line)) {
+        Student s = Student::fromCSV(line);
         if (s.rollNo != roll)
-            out.write((char*)&s, sizeof(s));
+            students.push_back(s);
         else
             found = true;
     }
     in.close();
-    out.close();
 
-    remove("students.dat");
-    rename("temp.dat", "students.dat");
+    ofstream out("students.dat");
+    for (const auto &s : students)
+        out << s.toCSV() << endl;
+    out.close();
 
     if (found)
         cout << "Record deleted successfully.\n";
@@ -132,12 +206,19 @@ void deleteStudent() {
 }
 
 void exportToText() {
-    Student s;
-    ifstream in("students.dat", ios::binary);
+    ifstream in("students.dat");
     ofstream out("students.txt");
 
-    while (in.read((char*)&s, sizeof(s))) {
-        out << "Roll No: " << s.rollNo << ", Name: " << s.name << ", Marks: " << s.marks << endl;
+    string line;
+    while (getline(in, line)) {
+        Student s = Student::fromCSV(line);
+        out << "Student ID: " << s.studentID
+            << ", Roll No: " << s.rollNo
+            << ", Name: " << s.name
+            << ", Gender: " << s.gender
+            << ", Course: " << s.course
+            << ", Year: " << s.year
+            << ", CGPA: " << s.cgpa << endl;
     }
 
     in.close();
@@ -147,10 +228,10 @@ void exportToText() {
 
 void sortStudents() {
     vector<Student> students;
-    Student s;
-    ifstream in("students.dat", ios::binary);
-    while (in.read((char*)&s, sizeof(s))) {
-        students.push_back(s);
+    string line;
+    ifstream in("students.dat");
+    while (getline(in, line)) {
+        students.push_back(Student::fromCSV(line));
     }
     in.close();
 
@@ -160,7 +241,7 @@ void sortStudents() {
     }
 
     int sortChoice;
-    cout << "Sort by:\n1. Roll No\n2. Name\n3. Marks\nEnter choice: ";
+    cout << "Sort by:\n1. Roll No\n2. Name\n3. CGPA\nEnter choice: ";
     cin >> sortChoice;
 
     switch (sortChoice) {
@@ -171,7 +252,7 @@ void sortStudents() {
             sort(students.begin(), students.end(), [](Student a, Student b) { return a.name < b.name; });
             break;
         case 3:
-            sort(students.begin(), students.end(), [](Student a, Student b) { return a.marks > b.marks; });
+            sort(students.begin(), students.end(), [](Student a, Student b) { return a.cgpa > b.cgpa; });
             break;
         default:
             cout << "Invalid choice.\n";
@@ -179,7 +260,7 @@ void sortStudents() {
     }
 
     cout << "\nSorted Records:\n";
-    for (auto& s : students)
+    for (auto &s : students)
         s.display();
 }
 
